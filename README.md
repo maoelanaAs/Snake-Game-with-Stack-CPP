@@ -2,8 +2,8 @@
 
 Aturan penomoran & penamaan versi
 
-v.a.b.[c] (Keterangan)
+v.A.B.[C] (Keterangan)
 
-A = Game Updated
-B = Add or Sub Fuction
+A = Game Updated,
+B = Add or Sub Fuction,
 C = Update Specific function
