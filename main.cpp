@@ -4,380 +4,291 @@
 #include <conio.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
+#include "header.h"
 
 using namespace std;
 
-// movement function
-void gotoxy(int x, int y)
+// Calculating score
+struct scoreStack
 {
-    COORD coord;
-    coord.X = x;
-    coord.Y = y;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-}
-
-// slow down anim
-void slow()
-{
-    float a = 1;
-    do
-    {
-        a = a + 0.1;
-    } while (a < 1000000);
-}
-
-// arena
-void arena()
-{
-    for (int i = 1; i < 69; i++)
-    {
-        for (int j = 3; j < 23; j++)
-        {
-            gotoxy(i, j);
-            cout << " ";
-        }
-    }
-}
-
-// arena boundary
-void bounds()
-{
-    gotoxy(0, 0);
-    printf("%c", 218);
-    gotoxy(0, 24);
-    printf("%c", 192);
-    gotoxy(21, 1);
-    printf("ASDW : bergerak, ESC : keluar");
-    gotoxy(11, 1);
-    printf("%c", 179);
-    gotoxy(62, 1);
-    printf("%c", 179);
-
-    for (int x = 1; x < 70; x++)
-    {
-        gotoxy(x, 0);
-        printf("%c", 196);
-        gotoxy(x, 2);
-        printf("%c", 196);
-        gotoxy(x, 24);
-        printf("%c", 196);
-    }
-
-    gotoxy(11, 0);
-    printf("%c", 194);
-    gotoxy(62, 0);
-    printf("%c", 194);
-    gotoxy(70, 0);
-    printf("%c", 191);
-    gotoxy(11, 2);
-    printf("%c", 193);
-    gotoxy(62, 2);
-    printf("%c", 193);
-    gotoxy(70, 24);
-    printf("%c", 217);
-
-    for (int y = 1; y < 24; y++)
-    {
-        gotoxy(0, y);
-        printf("%c", 179);
-        gotoxy(70, y);
-        printf("%c", 179);
-    }
-
-    gotoxy(0, 2);
-    printf("%c", 195);
-    gotoxy(70, 2);
-    printf("%c", 180);
-}
-
-int xAcak()
-{
-    int x = rand();
-    if (x < 1)
-    {
-        return (x % 69) + 1;
-    }
-    else
-    {
-        return (x % 69);
-    }
-}
-
-int yAcak()
-{
-    int y = rand();
-    if ((y % 23) < 4)
-    {
-        return (y % 23) + 4;
-    }
-    else
-    {
-        return (y % 23);
-    }
-}
-
-// Scoring
-struct node
-{
-    int value;
-    struct node *next;
+  int value;
+  scoreStack *next;
 };
 
-struct node *head = NULL;
-struct node *tail = NULL;
+scoreStack *head = NULL;
+scoreStack *tail = NULL;
+
 int xScore;
-int score = 0;
+int scoreValue = 0;
 
-bool isEmpty()
-{
-    return head == NULL;
-}
+bool isEmpty();
+void addScore();
+void subScore();
+void dispScore();
 
-void insScore(int data)
-{
-    if (isEmpty())
-    {
-        node *temp = new node();
-        temp->value = data;
-        temp->next = NULL;
+// Posisi hero, enemy, fruit
+// Posisi awal hero
+int xHero = 35;
+int yHero = 13;
+int xHeroPrev = xHero + 1;
+int yHeroPrev = yHero;
 
-        head = tail = temp;
-    }
-    else
-    {
-        node *temp = new node();
-        temp->value = data;
-        temp->next = NULL;
+// Batas Gerak
+int tAtas = 2;
+int tKiri = 0;
+int tBawah = 24;
+int tKanan = 70;
 
-        tail->next = temp;
-        tail = temp;
-    }
-}
+// Posisi awal enemy
+float xEnemy = 69;
+float yEnemy = 23;
+float xEnemyPrev = xEnemy;
+float yEnemyPrev = yEnemy;
 
-void delScore(int data)
-{
-    if (isEmpty()) // Pengecekan Isi Data
-    {
-    }
-    else
-    {
-        node *key = head;
-        node *prev = NULL;
+// langkah enemy
+float lEnemy = 0.3;
 
-        while (key != NULL)
-        {
-            if (key->value == data)
-            {
-                if (key->next == NULL)
-                {
-                    prev->next = NULL;
-                    tail = prev;
-                    free(key);
-                }
-            }
-            prev = key;
-            key = key->next;
-        }
-    }
-}
+// Posisi awal fruit
+int xFruit = xAcak();
+int yFruit = yAcak();
 
-void dispScore()
-{
-    node *key = head;
+void dispFruit();
 
-    int xScore = 64;
-    for (int i = 0; i < 4; i++)
-    {
-        gotoxy(xScore + i, 1);
-        printf(" ");
-    }
+// Displaying dan Movement hero & enemy
+void dispHeroEnemy();
+void heroMovement();
+void enemyMovement();
 
-    while (key != NULL)
-    {
-        gotoxy(xScore, 1);
-        cout << key->value;
-        xScore++;
-        key = key->next;
-    }
-}
+// Untuk menerima inputan keyboard
+char clickedKey;
+
+// Untuk menghitung detik
+float timer = 0;
 
 int main()
 {
-    char key;
+  srand(time(0));
 
-    // Posisi awal hero
-    int xHero = 35;
-    int yHero = 13;
-    int xHeroPrev = xHero + 1;
-    int yHeroPrev = yHero;
+  // set arena
+  clearCMD();
+  printMenu();
+  clearArena();
 
-    // Batas Gerak
-    int tAtas = 2;
-    int tBawah = 24;
-    int tKanan = 70;
-    int tKiri = 0;
+  // tampil fruit pertama
+  dispFruit();
 
-    // Posisi awal enemy
-    float xEnemy = 69;
-    float yEnemy = 23;
-    float xEnemyPrev = xEnemy;
-    float yEnemyPrev = yEnemy;
+  // start the game
+  do
+  {
+    // menghitung detik
+    timer += 0.1;
 
-    // langkah enemy
-    float lEnemy = 0.3;
-
-    // Posisi awal fruit
-    srand(time(0));
-    int xFruit = xAcak();
-    int yFruit = yAcak();
-
-    // clear area
-    bounds();
-    // create arena
-    arena();
-
-    // tampil fruit
-    gotoxy(xFruit, yFruit);
-    printf("*");
-
-    // dummy cari detik
-    float timer = 0;
-
-    // print langkah
-    // int langkah = 27;
-    // gotoxy(0, langkah);
-    // cout << "    xHero    |    yHero    |  xHeroPrev  |  yHeroPrev  |   xEnemy   |   yEnemy   | xEnemyPrev | yEnemyPrev ";
-    // langkah++;
-
-    do
+    // jika tidak makan selama 10 detik (-1 score)
+    if ((int)timer >= 10)
     {
-        // gotoxy(0, langkah);
-        // printf("  %2f  |  %2f  |  %2f  |  %2f  |  %2f  |  %2f  |  %2f  |  %2f  ", (float)xHero, (float)yHero, (float)xHeroPrev, (float)yHeroPrev, xEnemy, yEnemy, xEnemyPrev, yEnemyPrev);
-        // langkah++;
+      // subScore();
+      // dispScore();
 
-        // mulai cari detik
-        timer += 0.1;
-        gotoxy(1, 1);
-        printf("Timer: %.0f ", timer);
+      timer = 0;
+    }
 
-        if ((int)timer >= 10)
-        {
-            // delScore(score);
-            // dispScore();
+    // jika fruit tertimpa enemy (memindahkan fruit)
+    if ((int)xEnemy == xFruit && (int)yEnemy == yFruit)
+    {
+      dispFruit();
+    }
 
-            timer = 0;
-        }
+    // Displaying Hero & Enemy
+    dispHeroEnemy();
 
-        if ((int)xEnemy == xFruit && (int)yEnemy == yFruit)
-        {
-            xFruit = xAcak();
-            yFruit = yAcak();
-            gotoxy(xFruit, yFruit); // mengacak posisi fruit
-            printf("*");
-        }
+    // Jika score = 5 (menang)
+    if (scoreValue == 5)
+    {
+      gotoxy(25, 13);
+      printf("Selamat Anda Menang!!");
+      break;
+    }
 
-        // Menghilangkan jejak Hero dan Enemy
-        gotoxy(xHeroPrev, yHeroPrev);
-        printf(" ");
-        gotoxy(xEnemyPrev, yEnemyPrev);
-        printf(" ");
+    // Movement Hero & Enemy
+    heroMovement();
+    enemyMovement();
 
-        // Memunculkan Hero dan Enemy
-        gotoxy(xHero, yHero);
-        printf("H");
-        gotoxy(xEnemy, yEnemy);
-        printf("O");
+    // Jika hero makan fruit (+1 score)
+    if (xHero == xFruit && yHero == yFruit)
+    {
 
-        // kondisi menang
-        if (score == 5)
-        {
-            gotoxy(25, 13);
-            printf("Selamat anda menang!!");
-            break;
-        }
+      scoreValue++;
+      addScore();
+      dispScore();
 
-        // Detetksi Tombol
-        if (kbhit())
-        {
-            key = getch();
-        }
+      dispFruit();
 
-        if (toupper(key) == 'W') // ke atas
-        {
-            xHeroPrev = xHero;
-            yHeroPrev = yHero;
-            yHero--;
-            if (yHero <= tAtas)
-                yHero = tAtas + 1;
-        }
-        if (toupper(key) == 'A') // ke kiri
-        {
-            xHeroPrev = xHero;
-            yHeroPrev = yHero;
-            xHero--;
-            if (xHero <= tKiri)
-                xHero = tKiri + 1;
-        }
-        if (toupper(key) == 'S') // ke bawah
-        {
-            xHeroPrev = xHero;
-            yHeroPrev = yHero;
-            yHero++;
-            if (yHero >= tBawah)
-                yHero = tBawah - 1;
-        }
-        if (toupper(key) == 'D') // ke kanan
-        {
-            xHeroPrev = xHero;
-            yHeroPrev = yHero;
-            xHero++;
-            if (xHero >= tKanan)
-                xHero = tKanan - 1;
-        }
+      timer = 0;
+    }
 
-        // ALgoritma Kejar Hero
-        if (yEnemy < yHero + lEnemy) // enemy di atas hero
-        {
-            yEnemyPrev = yEnemy;
-            yEnemy += lEnemy;
-        }
-        else if (yEnemy > yHero) // enemy di bawah kero
-        {
-            yEnemyPrev = yEnemy;
-            yEnemy -= lEnemy;
-        }
+    slow();
 
-        if (xEnemy < xHero + lEnemy) // enemy di kiri hero
-        {
-            xEnemyPrev = xEnemy;
-            xEnemy += lEnemy;
-        }
-        else if (xEnemy > xHero) // enemy di kanan hero
-        {
-            xEnemyPrev = xEnemy;
-            xEnemy -= lEnemy;
-        }
+  } while (clickedKey != 27);
 
-        // Algoritma makan fruit
-        if (xHero == xFruit && yHero == yFruit)
-        {
+  gotoxy(0, 25);
 
-            score++;
-            insScore(score);
-            dispScore();
+  return 0;
+}
 
-            xFruit = xAcak();
-            yFruit = yAcak();
-            gotoxy(xFruit, yFruit); // mengacak posisi fruit
-            printf("*");
+// Mengecek apakah scoreStack kosong
+bool isEmpty()
+{
+  return head == NULL;
+}
 
-            timer = 0;
-        }
+// Menambah score
+void addScore()
+{
+  scoreStack *help = new scoreStack();
+  help->value = 254;
+  help->next = NULL;
 
-        slow();
-    } while (key != 27);
+  if (isEmpty())
+  {
+    head = tail = help;
+  }
+  else
+  {
+    tail->next = help;
+    tail = help;
+  }
+}
 
-    gotoxy(0, 25);
+// Mengurangi score
+void subScore()
+{
+  scoreStack *key = head;
+  scoreStack *prev = NULL;
+  if (isEmpty())
+  {
+  }
+  else
+  {
+    while (key != NULL)
+    {
+      if (key->next == NULL)
+      {
+        prev->next = NULL;
+        tail = prev;
+        free(key);
+      }
+      prev = key;
+      key = key->next;
+    }
+  }
+}
 
-    return 0;
+// Menampilkan score
+void dispScore()
+{
+  scoreStack *key = head;
+
+  xScore = 64;
+  while (key != NULL)
+  {
+    gotoxy(xScore, 1);
+    printf("%c", key->value);
+    xScore++;
+    key = key->next;
+  }
+}
+
+// Menampilkan fruit secara acak
+void dispFruit()
+{
+  xFruit = xAcak();
+  yFruit = yAcak();
+  gotoxy(xFruit, yFruit);
+  printf("*");
+}
+
+// Menampilkan hero dan enemy
+void dispHeroEnemy()
+{
+  // Menghilangkan jejak Hero dan Enemy
+  gotoxy(xHeroPrev, yHeroPrev);
+  printf(" ");
+  gotoxy(xEnemyPrev, yEnemyPrev);
+  printf(" ");
+
+  // Memunculkan Hero dan Enemy
+  gotoxy(xHero, yHero);
+  printf("H");
+  gotoxy(xEnemy, yEnemy);
+  printf("O");
+}
+
+// Mengerakkan hero dgn keyboard
+void heroMovement()
+{
+  // Deteksi keyboard
+  if (kbhit())
+  {
+    clickedKey = getch();
+  }
+
+  if (toupper(clickedKey) == 'W') // ke atas
+  {
+    xHeroPrev = xHero;
+    yHeroPrev = yHero;
+    yHero--;
+    if (yHero <= tAtas)
+      yHero = tAtas + 1;
+  }
+  if (toupper(clickedKey) == 'A') // ke kiri
+  {
+    xHeroPrev = xHero;
+    yHeroPrev = yHero;
+    xHero--;
+    if (xHero <= tKiri)
+      xHero = tKiri + 1;
+  }
+  if (toupper(clickedKey) == 'S') // ke bawah
+  {
+    xHeroPrev = xHero;
+    yHeroPrev = yHero;
+    yHero++;
+    if (yHero >= tBawah)
+      yHero = tBawah - 1;
+  }
+  if (toupper(clickedKey) == 'D') // ke kanan
+  {
+    xHeroPrev = xHero;
+    yHeroPrev = yHero;
+    xHero++;
+    if (xHero >= tKanan)
+      xHero = tKanan - 1;
+  }
+}
+
+// Mengerakkan enemy untuk mengejar hero
+void enemyMovement()
+{
+  if (yEnemy < yHero + lEnemy) // enemy di atas hero
+  {
+    yEnemyPrev = yEnemy;
+    yEnemy += lEnemy;
+  }
+  else if (yEnemy > yHero) // enemy di bawah kero
+  {
+    yEnemyPrev = yEnemy;
+    yEnemy -= lEnemy;
+  }
+
+  if (xEnemy < xHero + lEnemy) // enemy di kiri hero
+  {
+    xEnemyPrev = xEnemy;
+    xEnemy += lEnemy;
+  }
+  else if (xEnemy > xHero) // enemy di kanan hero
+  {
+    xEnemyPrev = xEnemy;
+    xEnemy -= lEnemy;
+  }
 }
