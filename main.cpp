@@ -60,6 +60,9 @@ void dispHeroEnemy();
 void heroMovement();
 void enemyMovement();
 
+// Game Over
+int gameOver();
+
 // Untuk menerima inputan keyboard
 char clickedKey;
 
@@ -84,6 +87,9 @@ int main()
     // menghitung detik
     timer += 0.1;
 
+    gotoxy(1, 1);
+    printf("Timer: %.0f ", timer);
+
     // jika tidak makan selama 10 detik (-1 score)
     if ((int)timer >= 10)
     {
@@ -102,14 +108,6 @@ int main()
     // Displaying Hero & Enemy
     dispHeroEnemy();
 
-    // Jika score = 5 (menang)
-    if (scoreValue == 5)
-    {
-      gotoxy(25, 13);
-      printf("Selamat Anda Menang!!");
-      break;
-    }
-
     // Movement Hero & Enemy
     heroMovement();
     enemyMovement();
@@ -117,14 +115,18 @@ int main()
     // Jika hero makan fruit (+1 score)
     if (xHero == xFruit && yHero == yFruit)
     {
-
-      scoreValue++;
       addScore();
       dispScore();
 
       dispFruit();
 
       timer = 0;
+    }
+
+    // (1) game over
+    if (gameOver() == 1 || gameOver() == 2)
+    {
+      break;
     }
 
     slow();
@@ -145,8 +147,10 @@ bool isEmpty()
 // Menambah score
 void addScore()
 {
+  scoreValue++;
+
   scoreStack *help = new scoreStack();
-  help->value = 254;
+  help->value = scoreValue;
   help->next = NULL;
 
   if (isEmpty())
@@ -165,6 +169,7 @@ void subScore()
 {
   scoreStack *key = head;
   scoreStack *prev = NULL;
+
   if (isEmpty())
   {
   }
@@ -177,6 +182,7 @@ void subScore()
         prev->next = NULL;
         tail = prev;
         free(key);
+        break;
       }
       prev = key;
       key = key->next;
@@ -193,7 +199,7 @@ void dispScore()
   while (key != NULL)
   {
     gotoxy(xScore, 1);
-    printf("%c", key->value);
+    printf("%d", key->value);
     xScore++;
     key = key->next;
   }
@@ -238,32 +244,24 @@ void heroMovement()
     xHeroPrev = xHero;
     yHeroPrev = yHero;
     yHero--;
-    if (yHero <= tAtas)
-      yHero = tAtas + 1;
   }
   if (toupper(clickedKey) == 'A') // ke kiri
   {
     xHeroPrev = xHero;
     yHeroPrev = yHero;
     xHero--;
-    if (xHero <= tKiri)
-      xHero = tKiri + 1;
   }
   if (toupper(clickedKey) == 'S') // ke bawah
   {
     xHeroPrev = xHero;
     yHeroPrev = yHero;
     yHero++;
-    if (yHero >= tBawah)
-      yHero = tBawah - 1;
   }
   if (toupper(clickedKey) == 'D') // ke kanan
   {
     xHeroPrev = xHero;
     yHeroPrev = yHero;
     xHero++;
-    if (xHero >= tKanan)
-      xHero = tKanan - 1;
   }
 }
 
@@ -290,5 +288,53 @@ void enemyMovement()
   {
     xEnemyPrev = xEnemy;
     xEnemy -= lEnemy;
+  }
+}
+
+int gameOver()
+{
+  if (xHero == (int)xEnemy && yHero == (int)yEnemy)
+  {
+    clearArena();
+    dispHeroEnemy();
+    gotoxy(29, 13);
+    printf("Game Over!!!");
+    return 1;
+  }
+  if (yHero == tAtas)
+  {
+    yHero += 1;
+    clearArena();
+    dispHeroEnemy();
+    gotoxy(29, 13);
+    printf("Game Over!!!");
+    return 1;
+  }
+  if (xHero == tKiri)
+  {
+    xHero += 1;
+    clearArena();
+    dispHeroEnemy();
+    gotoxy(29, 13);
+    printf("Game Over!!!");
+    return 1;
+  }
+  if (yHero == tBawah)
+  {
+    yHero -= 1;
+    clearArena();
+    dispHeroEnemy();
+    gotoxy(29, 13);
+    printf("Game Over!!!");
+    return 1;
+  }
+  if (xHero == tKanan)
+  {
+    xHero -= 1;
+    clearArena();
+    dispHeroEnemy();
+    gotoxy(29, 13);
+    printf("Game Over!!!");
+    return 1;
   }
 }
